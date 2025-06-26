@@ -24,7 +24,7 @@ func main() {
 	mux.HandleFunc("/thread/read", readThread)
 
 	server := &http.Server{
-		Addr:    "localhost:8080",
+		Addr:    "0.0.0.0:8080",
 		Handler: mux,
 	}
 	server.ListenAndServe()
