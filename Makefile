@@ -2,5 +2,7 @@ tidy:
 	go mod tidy
 
 codegen:
-	oapi-codegen -config cfg.yaml ../../api.yml
+	make -C openapi $@
 
+clean:
+	rm -rf openapi/gen.go

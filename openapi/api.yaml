@@ -14,10 +14,10 @@ paths:
   /signup/oauth:
     post:
       summary: Signup using OAuth
-      description: 
-      - The IdP gives the profile
-      - A user record is created in case it does not exist already
-      - Access tokens are returned
+      description: |
+        - The IdP gives the profile
+        - A user record is created in case it does not exist already
+        - Access tokens are returned
       parameters:
         - in: query
           name: provider
@@ -39,8 +39,8 @@ paths:
           content:
             application/json:
               schema:
-                type: token
-                example: string
+                type: string
+                example: token
         "400":
           description: Bad request. Valid provider and type must be given
         "5XX":
@@ -48,9 +48,9 @@ paths:
   /signup/phone:
     post:
       summary: Signup using phone
-      description: 
-      - A user record is created in case it does not exist already
-      - User id is returned
+      description: |
+        - A user record is created in case it does not exist already
+        - User id is returned
       parameters:
         - in: query
           name: type
@@ -83,18 +83,17 @@ paths:
           description: Bad request. Valid provider and type must be given
         "5XX":
           description: Unexpected error
-  /signup/phone/{id}/verify:
+  /signup/phone/{userId}/verify:
     patch:
       summary: Verify using OTP
-      description: 
-      - The OTP for the user id is checked
-      - Access tokens are returned
+      description: |
+        - The OTP for the user id is checked
+        - Access tokens are returned
       parameters:
         - in: path
-          name: type
+          name: userId
           schema:
             type: integer
-            enum: [driver, rider, admin]
           required: true
           description: The userid for verification
       requestBody:
@@ -138,7 +137,7 @@ paths:
           content:
             application/json:
               schema:
-                $reg: "#/components/schemas/Vehicle"
+                $ref: "#/components/schemas/Vehicle"
         "400":
           description: Bad request. Valid userid should be provided
         "5XX":
