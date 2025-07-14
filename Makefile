@@ -2,7 +2,8 @@ tidy:
 	go mod tidy
 
 codegen: | bin
-	make -C openapi $@
+#make -C openapi $@
+	oapi-codegen -config openapi/cfg.yaml openapi/api.yaml; cp openapi/gen.go api/
 
 webapp: | bin
 	mkdir -p bin; go build -o bin/taxifyapp ./cmd/app
