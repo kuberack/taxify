@@ -6,7 +6,10 @@ codegen: | bin
 	oapi-codegen -config openapi/cfg.yaml openapi/api.yaml; cp openapi/gen.go api/
 
 webapp: | bin
-	mkdir -p bin; go build -o bin/taxifyapp ./cmd/app
+	go build -o bin/taxifyapp ./cmd/app
+
+api: | bin
+	go build -o bin/taxifyapi ./cmd/apiserver
 
 bin:
 	mkdir -p bin
