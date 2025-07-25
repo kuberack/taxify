@@ -1,0 +1,157 @@
+openapi: 3.0.4
+info:
+  title: Taxify API
+  description: Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
+  version: 0.0.1
+
+servers:
+  - url: http://api.kuberack.com/v1
+    description: Main (production) server
+  - url: http://staging-api.kuberack.com
+    description: Internal staging server for testing
+
+paths:
+  /signup/oauth:
+    post:
+      summary: Signup using OAuth
+      description: |
+        - The IdP gives the profile
+        - A user record is created in case it does not exist already
+        - Access tokens are returned
+      parameters:
+        - in: query
+          name: provider
+          schema:
+            type: string
+            enum: [google, github, phone, email]
+          required: true
+          description: The name of the OAuth provider
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [driver, rider, admin]
+          required: true
+          description: The type of the signup
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                example: token
+        "400":
+          description: Bad request. Valid provider and type must be given
+        "5XX":
+          description: Unexpected error
+  /signup/phone:
+    post:
+      summary: Signup using phone
+      description: |
+        - A user record is created in case it does not exist already
+        - User id is returned
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [driver, rider, admin]
+          required: true
+          description: The type of the signup
+      requestBody:
+        required: true
+        description: Contains the phone number for auth
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userid:
+                    type: integer
+        "400":
+          description: Bad request. Valid provider and type must be given
+        "5XX":
+          description: Unexpected error
+  /signup/phone/{userId}/verify:
+    patch:
+      summary: Verify using OTP
+      description: |
+        - The OTP for the user id is checked
+        - Access tokens are returned
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+          description: The userid for verification
+      requestBody:
+        required: true
+        description: Contains OTP
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                otp:
+                  type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "400":
+          description: Bad request. Invalid OTP
+        "5XX":
+          description: Unexpected error
+  /drivers/{userId}/vehicles:
+    get:
+      summary: Get the vehicles associated with driver
+      description: Optional extended description in CommonMark or HTML.
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+          description: Id of the driver who is verifying
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "400":
+          description: Bad request. Valid userid should be provided
+        "5XX":
+          description: Unexpected error
+
+components:
+  schemas:
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+        model:
+          type: string
+          enum: [sedan, suv, hatchback]
+        registration:
+          type: string
