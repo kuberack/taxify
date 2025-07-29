@@ -8,6 +8,7 @@ codegen: | bin
 webapp: | bin
 	go build -o bin/taxifyapp ./cmd/app
 
+.PHONY: api
 api: | bin
 	go build -o bin/taxifyapi ./cmd/apiserver
 
