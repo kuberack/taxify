@@ -1,5 +1,5 @@
 # Specifies a parent image
-FROM golang:1.24.5-bookworm
+FROM docker.io/library/golang:1.24.5-bookworm
  
 RUN apt-get update && apt-get install -y make
 
@@ -19,4 +19,6 @@ RUN make api
 EXPOSE 8080
  
 # Specifies the executable command that runs when the container starts
-CMD [ “./bin/taxifyapi” ]
+CMD [ "-c", "./bin/taxifyapi" ]
+
+ENTRYPOINT [ "/bin/sh" ]
