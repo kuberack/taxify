@@ -9,6 +9,7 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 	twilio "github.com/twilio/twilio-go"
+	"github.com/twilio/twilio-go/client"
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
 )
 
@@ -134,11 +135,36 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 		return
 	}
 
-	// TODO: need to move it to the context
-	tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
-		Username: accountSid,
-		Password: authToken,
-	})
+	// Check if the proxy ip is configured
+	// TODO: need to move tclient to the context. Basically each http client for a given
+	// external service needs to be available in the context
+	_, exists = os.LookupEnv("HTTP_PROXY")
+	if !exists {
+		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
+			Username: accountSid,
+			Password: authToken,
+		})
+	} else {
+		// https://github.com/twilio/twilio-go/blob/main/advanced-examples/custom-http-client.md
+		// Add proxy settings to a http Transport object
+		transport := &http.Transport{
+			// https://pkg.go.dev/net/http#ProxyFromEnvironment
+			Proxy: http.ProxyFromEnvironment,
+		}
+
+		// Add the Transport to an http Client
+		httpClient := &http.Client{
+			Transport: transport,
+		}
+
+		// Create your custom Twilio client using the http client and your credentials
+		twilioHttpClient := client.Client{
+			Credentials: client.NewCredentials(accountSid, authToken),
+			HTTPClient:  httpClient,
+		}
+		twilioHttpClient.SetAccountSid(accountSid)
+		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: &twilioHttpClient})
+	}
 
 	// First, create a verification
 	// https://www.twilio.com/docs/verify/api/verification
