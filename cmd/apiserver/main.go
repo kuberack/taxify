@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"kuberack.com/taxify/api"
+	"kuberack.com/taxify/internal/api"
 )
 
 func main() {

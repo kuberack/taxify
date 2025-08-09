@@ -3,7 +3,7 @@ tidy:
 
 codegen: | bin
 #make -C openapi $@
-	oapi-codegen -config openapi/cfg.yaml openapi/api.yaml; cp openapi/gen.go api/
+	oapi-codegen -config openapi/cfg.yaml openapi/api.yaml; cp openapi/gen.go internal/api/
 
 webapp: | bin
 	go build -o bin/taxifyapp ./cmd/app
