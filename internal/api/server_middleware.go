@@ -21,7 +21,8 @@ func NewServerWithMiddleware() http.Handler {
 	// openapi validation middleware
 	// loader := &openapi3.Loader{Context: ctx, IsExternalRefsAllowed: true}
 	loader := openapi3.NewLoader()
-	spec, err := loader.LoadFromFile("../openapi/api.yaml")
+	// TODO: get the path from configuration
+	spec, err := loader.LoadFromFile("../../openapi/api.yaml")
 	if err != nil {
 		slog.Error("error", "msg", err.Error())
 		return nil

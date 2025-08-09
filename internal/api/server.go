@@ -11,6 +11,7 @@ import (
 	twilio "github.com/twilio/twilio-go"
 	"github.com/twilio/twilio-go/client"
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
+	"kuberack.com/taxify/internal/models"
 )
 
 // optional code omitted
@@ -190,18 +191,25 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 
 	// Write an object into the db
 	// Write the phone number, verification service id, expiry time, etc. into db
-	userid := inMemoryDBRecordId
-	inMemoryDB[userid] = &inMemoryDBRecord{
-		formatted,
-		serviceId,
+	user := models.User{
+		PhoneNum:  formatted,
+		VerifySid: serviceId,
 	}
-	inMemoryDBRecordId++
+	if err := user.Create(); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "unable to write to db",
+		})
+		fmt.Printf("error: %s\n", err.Error())
+		return
+	}
 
 	// Response
 	// TODO: need to validate responses using the openapi
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]int{
-		"userid": userid,
+		"userid": user.Id,
 	})
 }
 
@@ -210,8 +218,8 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Request, userId int) {
 
 	// validate the input userId, lookup the db
-	userRecord, ok := inMemoryDB[userId]
-	if !ok {
+	userRecord, err := models.UserByID(userId)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{
@@ -244,10 +252,10 @@ func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Reques
 
 	// https://www.twilio.com/docs/verify/api/verification-check
 	p := &verify.CreateVerificationCheckParams{}
-	p.SetTo(userRecord.phoneNumber)
+	p.SetTo(userRecord.PhoneNum)
 	p.SetCode(strconv.Itoa(*body.Otp))
 
-	if resp, err := tclient.VerifyV2.CreateVerificationCheck(userRecord.verifySid, p); err != nil {
+	if resp, err := tclient.VerifyV2.CreateVerificationCheck(userRecord.VerifySid, p); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{

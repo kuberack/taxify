@@ -2,7 +2,6 @@ tidy:
 	go mod tidy
 
 codegen: | bin
-#make -C openapi $@
 	oapi-codegen -config openapi/cfg.yaml openapi/api.yaml; cp openapi/gen.go internal/api/
 
 webapp: | bin
@@ -14,6 +13,15 @@ api: | bin
 
 bin:
 	mkdir -p bin
+
+test:
+	# setup the db
+	@echo "Running bash commands"
+	for file in internal/models/*.sql; do \
+	mysql -u shiv -p'shiv123' < $$file; \
+	done
+	# test
+	go test ./internal/api
 
 clean:
 	rm -rf bin/*
