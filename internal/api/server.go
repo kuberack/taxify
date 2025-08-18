@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -22,14 +23,31 @@ func NewServer() Server {
 	return Server{}
 }
 
-// in memory db
-type inMemoryDBRecord struct {
-	phoneNumber string
-	verifySid   string
+type MyClient struct {
+	client.Client
+	host string
 }
 
-var inMemoryDB = make(map[int]*inMemoryDBRecord)
-var inMemoryDBRecordId int
+func (c *MyClient) SendRequest(method string, rawURL string, data url.Values, headers map[string]interface{}, body ...byte) (*http.Response, error) {
+	// Modify the URL to point to proxy
+	if p, err := url.Parse(rawURL); err != nil {
+		return nil, err
+	} else {
+		p.Scheme = "http"
+		p.Host = c.host
+		rawURL = p.String()
+	}
+
+	var resp *http.Response
+	var err error
+	if resp, err = c.Client.SendRequest(method, rawURL, data, headers, body...); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println(resp.StatusCode)
+	}
+	// Custom code to pre-process response here
+	return resp, err
+}
 
 var tclient *twilio.RestClient
 
@@ -139,7 +157,7 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 	// Check if the proxy ip is configured
 	// TODO: need to move tclient to the context. Basically each http client for a given
 	// external service needs to be available in the context
-	_, exists = os.LookupEnv("HTTP_PROXY")
+	purl, exists := os.LookupEnv("HTTP_PROXY")
 	if !exists {
 		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
 			Username: accountSid,
@@ -147,24 +165,18 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 		})
 	} else {
 		// https://github.com/twilio/twilio-go/blob/main/advanced-examples/custom-http-client.md
-		// Add proxy settings to a http Transport object
-		transport := &http.Transport{
-			// https://pkg.go.dev/net/http#ProxyFromEnvironment
-			Proxy: http.ProxyFromEnvironment,
-		}
 
-		// Add the Transport to an http Client
-		httpClient := &http.Client{
-			Transport: transport,
-		}
+		proxyURL, _ := url.Parse(purl)
 
 		// Create your custom Twilio client using the http client and your credentials
-		twilioHttpClient := client.Client{
-			Credentials: client.NewCredentials(accountSid, authToken),
-			HTTPClient:  httpClient,
+		twilioHttpClient := &MyClient{
+			Client: client.Client{
+				Credentials: client.NewCredentials(accountSid, authToken),
+			},
+			host: proxyURL.Host,
 		}
 		twilioHttpClient.SetAccountSid(accountSid)
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: &twilioHttpClient})
+		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: twilioHttpClient})
 	}
 
 	// First, create a verification
