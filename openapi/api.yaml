@@ -81,8 +81,22 @@ paths:
                     type: integer
         "400":
           description: Bad request. Valid provider and type must be given
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         "5XX":
           description: Unexpected error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
   /signup/phone/{userId}/verify:
     patch:
       summary: Verify using OTP
@@ -118,8 +132,22 @@ paths:
                     type: string
         "400":
           description: Bad request. Invalid OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         "5XX":
           description: Unexpected error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
   /drivers/{userId}/vehicles:
     get:
       summary: Get the vehicles associated with driver

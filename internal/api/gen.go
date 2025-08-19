@@ -6,10 +6,13 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/oapi-codegen/runtime"
+	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
 // Defines values for VehicleModel.
@@ -375,4 +378,325 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("PATCH "+options.BaseURL+"/signup/phone/{userId}/verify", wrapper.PatchSignupPhoneUserIdVerify)
 
 	return m
+}
+
+type GetDriversUserIdVehiclesRequestObject struct {
+	UserId int `json:"userId"`
+}
+
+type GetDriversUserIdVehiclesResponseObject interface {
+	VisitGetDriversUserIdVehiclesResponse(w http.ResponseWriter) error
+}
+
+type GetDriversUserIdVehicles200JSONResponse Vehicle
+
+func (response GetDriversUserIdVehicles200JSONResponse) VisitGetDriversUserIdVehiclesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDriversUserIdVehicles400Response struct {
+}
+
+func (response GetDriversUserIdVehicles400Response) VisitGetDriversUserIdVehiclesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type GetDriversUserIdVehicles5XXResponse struct {
+	StatusCode int
+}
+
+func (response GetDriversUserIdVehicles5XXResponse) VisitGetDriversUserIdVehiclesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(response.StatusCode)
+	return nil
+}
+
+type PostSignupOauthRequestObject struct {
+	Params PostSignupOauthParams
+}
+
+type PostSignupOauthResponseObject interface {
+	VisitPostSignupOauthResponse(w http.ResponseWriter) error
+}
+
+type PostSignupOauth200JSONResponse string
+
+func (response PostSignupOauth200JSONResponse) VisitPostSignupOauthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostSignupOauth400Response struct {
+}
+
+func (response PostSignupOauth400Response) VisitPostSignupOauthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type PostSignupOauth5XXResponse struct {
+	StatusCode int
+}
+
+func (response PostSignupOauth5XXResponse) VisitPostSignupOauthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(response.StatusCode)
+	return nil
+}
+
+type PostSignupPhoneRequestObject struct {
+	Params PostSignupPhoneParams
+	Body   *PostSignupPhoneJSONRequestBody
+}
+
+type PostSignupPhoneResponseObject interface {
+	VisitPostSignupPhoneResponse(w http.ResponseWriter) error
+}
+
+type PostSignupPhone200JSONResponse struct {
+	Userid *int `json:"userid,omitempty"`
+}
+
+func (response PostSignupPhone200JSONResponse) VisitPostSignupPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostSignupPhone400JSONResponse struct {
+	Message *string `json:"message,omitempty"`
+}
+
+func (response PostSignupPhone400JSONResponse) VisitPostSignupPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostSignupPhone5XXJSONResponse struct {
+	Body struct {
+		Message *string `json:"message,omitempty"`
+	}
+	StatusCode int
+}
+
+func (response PostSignupPhone5XXJSONResponse) VisitPostSignupPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PatchSignupPhoneUserIdVerifyRequestObject struct {
+	UserId int `json:"userId"`
+	Body   *PatchSignupPhoneUserIdVerifyJSONRequestBody
+}
+
+type PatchSignupPhoneUserIdVerifyResponseObject interface {
+	VisitPatchSignupPhoneUserIdVerifyResponse(w http.ResponseWriter) error
+}
+
+type PatchSignupPhoneUserIdVerify200JSONResponse struct {
+	Token *string `json:"token,omitempty"`
+}
+
+func (response PatchSignupPhoneUserIdVerify200JSONResponse) VisitPatchSignupPhoneUserIdVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchSignupPhoneUserIdVerify400JSONResponse struct {
+	Message *string `json:"message,omitempty"`
+}
+
+func (response PatchSignupPhoneUserIdVerify400JSONResponse) VisitPatchSignupPhoneUserIdVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchSignupPhoneUserIdVerify5XXJSONResponse struct {
+	Body struct {
+		Message *string `json:"message,omitempty"`
+	}
+	StatusCode int
+}
+
+func (response PatchSignupPhoneUserIdVerify5XXJSONResponse) VisitPatchSignupPhoneUserIdVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+// StrictServerInterface represents all server handlers.
+type StrictServerInterface interface {
+	// Get the vehicles associated with driver
+	// (GET /drivers/{userId}/vehicles)
+	GetDriversUserIdVehicles(ctx context.Context, request GetDriversUserIdVehiclesRequestObject) (GetDriversUserIdVehiclesResponseObject, error)
+	// Signup using OAuth
+	// (POST /signup/oauth)
+	PostSignupOauth(ctx context.Context, request PostSignupOauthRequestObject) (PostSignupOauthResponseObject, error)
+	// Signup using phone
+	// (POST /signup/phone)
+	PostSignupPhone(ctx context.Context, request PostSignupPhoneRequestObject) (PostSignupPhoneResponseObject, error)
+	// Verify using OTP
+	// (PATCH /signup/phone/{userId}/verify)
+	PatchSignupPhoneUserIdVerify(ctx context.Context, request PatchSignupPhoneUserIdVerifyRequestObject) (PatchSignupPhoneUserIdVerifyResponseObject, error)
+}
+
+type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
+type StrictMiddlewareFunc = strictnethttp.StrictHTTPMiddlewareFunc
+
+type StrictHTTPServerOptions struct {
+	RequestErrorHandlerFunc  func(w http.ResponseWriter, r *http.Request, err error)
+	ResponseErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+}
+
+func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
+	return &strictHandler{ssi: ssi, middlewares: middlewares, options: StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		},
+		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		},
+	}}
+}
+
+func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc, options StrictHTTPServerOptions) ServerInterface {
+	return &strictHandler{ssi: ssi, middlewares: middlewares, options: options}
+}
+
+type strictHandler struct {
+	ssi         StrictServerInterface
+	middlewares []StrictMiddlewareFunc
+	options     StrictHTTPServerOptions
+}
+
+// GetDriversUserIdVehicles operation middleware
+func (sh *strictHandler) GetDriversUserIdVehicles(w http.ResponseWriter, r *http.Request, userId int) {
+	var request GetDriversUserIdVehiclesRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDriversUserIdVehicles(ctx, request.(GetDriversUserIdVehiclesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDriversUserIdVehicles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDriversUserIdVehiclesResponseObject); ok {
+		if err := validResponse.VisitGetDriversUserIdVehiclesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostSignupOauth operation middleware
+func (sh *strictHandler) PostSignupOauth(w http.ResponseWriter, r *http.Request, params PostSignupOauthParams) {
+	var request PostSignupOauthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostSignupOauth(ctx, request.(PostSignupOauthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostSignupOauth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostSignupOauthResponseObject); ok {
+		if err := validResponse.VisitPostSignupOauthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostSignupPhone operation middleware
+func (sh *strictHandler) PostSignupPhone(w http.ResponseWriter, r *http.Request, params PostSignupPhoneParams) {
+	var request PostSignupPhoneRequestObject
+
+	request.Params = params
+
+	var body PostSignupPhoneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostSignupPhone(ctx, request.(PostSignupPhoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostSignupPhone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostSignupPhoneResponseObject); ok {
+		if err := validResponse.VisitPostSignupPhoneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchSignupPhoneUserIdVerify operation middleware
+func (sh *strictHandler) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Request, userId int) {
+	var request PatchSignupPhoneUserIdVerifyRequestObject
+
+	request.UserId = userId
+
+	var body PatchSignupPhoneUserIdVerifyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchSignupPhoneUserIdVerify(ctx, request.(PatchSignupPhoneUserIdVerifyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchSignupPhoneUserIdVerify")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchSignupPhoneUserIdVerifyResponseObject); ok {
+		if err := validResponse.VisitPatchSignupPhoneUserIdVerifyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
