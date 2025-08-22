@@ -7,11 +7,18 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	middleware "github.com/oapi-codegen/nethttp-middleware"
+	"kuberack.com/taxify/internal/twilio_client"
 )
 
 func NewServerWithMiddleware() http.Handler {
 
-	server := NewServer()
+	// Get a twilio client
+	t, err := twilio_client.GetTwilioClient()
+	if err != nil {
+		return nil
+	}
+	// Inject twilio client into Server
+	server := NewServer(t)
 
 	r := http.NewServeMux()
 

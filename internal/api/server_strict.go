@@ -1,3 +1,4 @@
+// This file is currently unused
 package api
 
 import (
@@ -5,39 +6,40 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 
 	"github.com/nyaruka/phonenumbers"
-	twilio "github.com/twilio/twilio-go"
-	"github.com/twilio/twilio-go/client"
-	verify "github.com/twilio/twilio-go/rest/verify/v2"
 	"kuberack.com/taxify/internal/models"
+	"kuberack.com/taxify/internal/twilio_client"
 )
 
 // optional code omitted
 
-type ServerStrict struct{}
-
-func NewServerStrict() ServerStrict {
-	return ServerStrict{}
+type TaxifyServer struct {
+	tclient *twilio_client.TwilioClient // all clients to appear here
 }
 
-func (ServerStrict) GetDriversUserIdVehicles(ctx context.Context, request GetDriversUserIdVehiclesRequestObject) (GetDriversUserIdVehiclesResponseObject, error) {
+var _ StrictServerInterface = (*TaxifyServer)(nil)
+
+func NewServerStrict(twilio_client *twilio_client.TwilioClient) TaxifyServer {
+	return TaxifyServer{twilio_client}
+}
+
+func (TaxifyServer) GetDriversUserIdVehicles(ctx context.Context, request GetDriversUserIdVehiclesRequestObject) (GetDriversUserIdVehiclesResponseObject, error) {
 	return nil, errors.New("not implemented")
 
 }
 
 // Signup using OAuth
 // (POST /signup/oauth)
-func (ServerStrict) PostSignupOauth(ctx context.Context, request PostSignupOauthRequestObject) (PostSignupOauthResponseObject, error) {
+func (TaxifyServer) PostSignupOauth(ctx context.Context, request PostSignupOauthRequestObject) (PostSignupOauthResponseObject, error) {
 	return nil, errors.New("not implemented")
 }
 
 // Signup using phone
 // (POST /signup/phone)
-func (ServerStrict) PostSignupPhone(ctx context.Context, request PostSignupPhoneRequestObject) (PostSignupPhoneResponseObject, error) {
+func (t TaxifyServer) PostSignupPhone(ctx context.Context, request PostSignupPhoneRequestObject) (PostSignupPhoneResponseObject, error) {
 	// validate input
 	switch request.Params.Type {
 	case "driver", "rider", "admin":
@@ -86,75 +88,10 @@ func (ServerStrict) PostSignupPhone(ctx context.Context, request PostSignupPhone
 	}
 	formatted := phonenumbers.Format(num, phonenumbers.E164)
 
-	// Send message to Twilio
-	// Find your Account SID and Auth Token at twilio.com/console
-	// and set the environment variables. See http://twil.io/secure
-	accountSid, exists := os.LookupEnv("TAXIFY_TWILIO_ACCOUNT_SID")
-	if !exists {
-		message := "twilio account sid not present"
-		resp := PostSignupPhone5XXJSONResponse{
-			Body: struct {
-				Message *string "json:\"message,omitempty\""
-			}{&message},
-			StatusCode: http.StatusInternalServerError}
-		return resp, nil
-	}
-
-	authToken, exists := os.LookupEnv("TAXIFY_TWILIO_AUTH_KEY")
-	if !exists {
-		message := "twilio auth key not present"
-		resp := PostSignupPhone5XXJSONResponse{
-			Body: struct {
-				Message *string "json:\"message,omitempty\""
-			}{&message},
-			StatusCode: http.StatusInternalServerError}
-		return resp, nil
-	}
-
-	// https://console.twilio.com/us1/develop/verify/services
-	serviceId, exists := os.LookupEnv("TAXIFY_TWILIO_VERIFY_SERVICE_ID")
-	if !exists {
-		message := "twilio verify service id not present"
-		resp := PostSignupPhone5XXJSONResponse{
-			Body: struct {
-				Message *string "json:\"message,omitempty\""
-			}{&message},
-			StatusCode: http.StatusInternalServerError}
-		return resp, nil
-	}
-
-	// Check if the proxy ip is configured
-	// TODO: need to move tclient to the context. Basically each http client for a given
-	// external service needs to be available in the context
-	purl, exists := os.LookupEnv("HTTP_PROXY")
-	if !exists {
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
-			Username: accountSid,
-			Password: authToken,
-		})
-	} else {
-		// https://github.com/twilio/twilio-go/blob/main/advanced-examples/custom-http-client.md
-
-		proxyURL, _ := url.Parse(purl)
-
-		// Create your custom Twilio client using the http client and your credentials
-		twilioHttpClient := &MyClient{
-			Client: client.Client{
-				Credentials: client.NewCredentials(accountSid, authToken),
-			},
-			host: proxyURL.Host,
-		}
-		twilioHttpClient.SetAccountSid(accountSid)
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: twilioHttpClient})
-	}
-
-	// First, create a verification
+	// Create a verification
 	// https://www.twilio.com/docs/verify/api/verification
-	vparams := &verify.CreateVerificationParams{}
-	vparams.SetTo(formatted)
-	vparams.SetChannel("sms")
-
-	if resp, err := tclient.VerifyV2.CreateVerification(serviceId, vparams); err != nil {
+	verifySid, err := t.tclient.CreateVerification(formatted)
+	if err != nil {
 		message := "unable to verify"
 		fmt.Printf("error: %s\n", err.Error())
 		resp := PostSignupPhone5XXJSONResponse{
@@ -163,19 +100,13 @@ func (ServerStrict) PostSignupPhone(ctx context.Context, request PostSignupPhone
 			}{&message},
 			StatusCode: http.StatusInternalServerError}
 		return resp, nil
-	} else {
-		if resp.Sid != nil {
-			fmt.Println(*resp.Sid)
-		} else {
-			fmt.Println(resp.Sid)
-		}
 	}
 
 	// Write an object into the db
 	// Write the phone number, verification service id, expiry time, etc. into db
 	user := models.User{
 		PhoneNum:  formatted,
-		VerifySid: serviceId,
+		VerifySid: verifySid,
 	}
 	if err := user.Create(); err != nil {
 		message := "unable to write to db"
@@ -195,7 +126,7 @@ func (ServerStrict) PostSignupPhone(ctx context.Context, request PostSignupPhone
 
 // Verify using OTP
 // (PATCH /signup/phone/{userId}/verify)
-func (ServerStrict) PatchSignupPhoneUserIdVerify(ctx context.Context, request PatchSignupPhoneUserIdVerifyRequestObject) (PatchSignupPhoneUserIdVerifyResponseObject, error) {
+func (t TaxifyServer) PatchSignupPhoneUserIdVerify(ctx context.Context, request PatchSignupPhoneUserIdVerifyRequestObject) (PatchSignupPhoneUserIdVerifyResponseObject, error) {
 
 	// validate the input userId, lookup the db
 	userRecord, err := models.UserByID(request.UserId)
@@ -222,11 +153,9 @@ func (ServerStrict) PatchSignupPhoneUserIdVerify(ctx context.Context, request Pa
 	}
 
 	// https://www.twilio.com/docs/verify/api/verification-check
-	p := &verify.CreateVerificationCheckParams{}
-	p.SetTo(userRecord.PhoneNum)
-	p.SetCode(strconv.Itoa(*request.Body.Otp))
+	err = t.tclient.DoVerificationCheck(userRecord, *request.Body.Otp)
 
-	if resp, err := tclient.VerifyV2.CreateVerificationCheck(userRecord.VerifySid, p); err != nil {
+	if err != nil {
 		message := "unable to check"
 		fmt.Printf("error: %s\n", err.Error())
 		resp := PatchSignupPhoneUserIdVerify5XXJSONResponse{
@@ -235,13 +164,8 @@ func (ServerStrict) PatchSignupPhoneUserIdVerify(ctx context.Context, request Pa
 			}{&message},
 			StatusCode: http.StatusInternalServerError}
 		return resp, nil
-	} else {
-		if resp.Sid != nil {
-			fmt.Println(*resp.Sid)
-		} else {
-			fmt.Println(resp.Sid)
-		}
 	}
+
 	fmt.Printf("phone verification success\n")
 	token := "123"
 	return PatchSignupPhoneUserIdVerify200JSONResponse{Token: &token}, nil

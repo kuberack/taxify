@@ -1,55 +1,29 @@
+// This is the old file which uses the non-strict version of the oapi generated code
+// The latest file is the server_strict.go
+
 package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 
 	"github.com/nyaruka/phonenumbers"
-	twilio "github.com/twilio/twilio-go"
-	"github.com/twilio/twilio-go/client"
-	verify "github.com/twilio/twilio-go/rest/verify/v2"
 	"kuberack.com/taxify/internal/models"
+	"kuberack.com/taxify/internal/twilio_client"
 )
 
 // optional code omitted
 
-type Server struct{}
-
-func NewServer() Server {
-	return Server{}
+type Server struct {
+	tclient *twilio_client.TwilioClient // all clients to appear here
 }
 
-type MyClient struct {
-	client.Client
-	host string
+func NewServer(twilio_client *twilio_client.TwilioClient) Server {
+	return Server{twilio_client}
 }
-
-func (c *MyClient) SendRequest(method string, rawURL string, data url.Values, headers map[string]interface{}, body ...byte) (*http.Response, error) {
-	// Modify the URL to point to proxy
-	if p, err := url.Parse(rawURL); err != nil {
-		return nil, err
-	} else {
-		p.Scheme = "http"
-		p.Host = c.host
-		rawURL = p.String()
-	}
-
-	var resp *http.Response
-	var err error
-	if resp, err = c.Client.SendRequest(method, rawURL, data, headers, body...); err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println(resp.StatusCode)
-	}
-	// Custom code to pre-process response here
-	return resp, err
-}
-
-var tclient *twilio.RestClient
 
 func (Server) GetDriversUserIdVehicles(w http.ResponseWriter, r *http.Request, userId int) {
 
@@ -63,7 +37,7 @@ func (Server) PostSignupOauth(w http.ResponseWriter, r *http.Request, params Pos
 
 // Signup using phone
 // (POST /signup/phone)
-func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params PostSignupPhoneParams) {
+func (s Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params PostSignupPhoneParams) {
 
 	// validate input
 	switch params.Type {
@@ -120,93 +94,25 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 	}
 	formatted := phonenumbers.Format(num, phonenumbers.E164)
 
-	// Send message to Twilio
-	// Find your Account SID and Auth Token at twilio.com/console
-	// and set the environment variables. See http://twil.io/secure
-	accountSid, exists := os.LookupEnv("TAXIFY_TWILIO_ACCOUNT_SID")
-	if !exists {
+	// Create a verification
+	verifySid, err := s.tclient.CreateVerification(formatted)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{
-			"error": "twilio account sid not present",
-		})
-		return
-	}
-
-	authToken, exists := os.LookupEnv("TAXIFY_TWILIO_AUTH_KEY")
-	if !exists {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "twilio auth key not present",
-		})
-		return
-	}
-
-	// https://console.twilio.com/us1/develop/verify/services
-	serviceId, exists := os.LookupEnv("TAXIFY_TWILIO_VERIFY_SERVICE_ID")
-	if !exists {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "twilio verify service id not present",
-		})
-		return
-	}
-
-	// Check if the proxy ip is configured
-	// TODO: need to move tclient to the context. Basically each http client for a given
-	// external service needs to be available in the context
-	purl, exists := os.LookupEnv("HTTP_PROXY")
-	if !exists {
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
-			Username: accountSid,
-			Password: authToken,
-		})
-	} else {
-		// https://github.com/twilio/twilio-go/blob/main/advanced-examples/custom-http-client.md
-
-		proxyURL, _ := url.Parse(purl)
-
-		// Create your custom Twilio client using the http client and your credentials
-		twilioHttpClient := &MyClient{
-			Client: client.Client{
-				Credentials: client.NewCredentials(accountSid, authToken),
-			},
-			host: proxyURL.Host,
-		}
-		twilioHttpClient.SetAccountSid(accountSid)
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: twilioHttpClient})
-	}
-
-	// First, create a verification
-	// https://www.twilio.com/docs/verify/api/verification
-	vparams := &verify.CreateVerificationParams{}
-	vparams.SetTo(formatted)
-	vparams.SetChannel("sms")
-
-	if resp, err := tclient.VerifyV2.CreateVerification(serviceId, vparams); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "unable to verify",
+			"error": err.Error(),
 		})
 		fmt.Printf("error: %s\n", err.Error())
 		return
-	} else {
-		if resp.Sid != nil {
-			fmt.Println(*resp.Sid)
-		} else {
-			fmt.Println(resp.Sid)
-		}
 	}
 
 	// Write an object into the db
 	// Write the phone number, verification service id, expiry time, etc. into db
 	user := models.User{
 		PhoneNum:  formatted,
-		VerifySid: serviceId,
+		VerifySid: verifySid,
 	}
+
 	if err := user.Create(); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -227,7 +133,7 @@ func (Server) PostSignupPhone(w http.ResponseWriter, r *http.Request, params Pos
 
 // Verify using OTP
 // (PATCH /signup/phone/{userId}/verify)
-func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Request, userId int) {
+func (s Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Request, userId int) {
 
 	// validate the input userId, lookup the db
 	userRecord, err := models.UserByID(userId)
@@ -235,7 +141,7 @@ func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Reques
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{
-			"error": "error",
+			"error": err.Error(),
 		})
 		fmt.Printf("Bad user id")
 		return
@@ -263,11 +169,9 @@ func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Reques
 	}
 
 	// https://www.twilio.com/docs/verify/api/verification-check
-	p := &verify.CreateVerificationCheckParams{}
-	p.SetTo(userRecord.PhoneNum)
-	p.SetCode(strconv.Itoa(*body.Otp))
+	err = s.tclient.DoVerificationCheck(userRecord, *body.Otp)
 
-	if resp, err := tclient.VerifyV2.CreateVerificationCheck(userRecord.VerifySid, p); err != nil {
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{
@@ -275,13 +179,8 @@ func (Server) PatchSignupPhoneUserIdVerify(w http.ResponseWriter, r *http.Reques
 		})
 		fmt.Printf("error: %s\n", err.Error())
 		return
-	} else {
-		if resp.Sid != nil {
-			fmt.Println(*resp.Sid)
-		} else {
-			fmt.Println(resp.Sid)
-		}
 	}
+
 	fmt.Printf("phone verification success\n")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
