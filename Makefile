@@ -14,14 +14,17 @@ api: | bin
 bin:
 	mkdir -p bin
 
-test:
+integration_test:
 	# setup the db
 	@echo "Running bash commands"
 	for file in internal/models/*.sql; do \
 	mysql -u shiv -p'shiv123' < $$file; \
 	done
 	# test
-	go test ./internal/api
+	go test -run Integration ./internal/api/
+
+unit_test:
+	go test -run Unit ./internal/api/
 
 clean:
 	rm -rf bin/*

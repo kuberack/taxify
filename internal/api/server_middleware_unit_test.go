@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func TestPostSignupPhone(t *testing.T) {
+func TestPostSignupPhoneUnit(t *testing.T) {
 
 	// Load variables from .env file into environment
 	// This should be moved to a setup function
