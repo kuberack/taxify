@@ -9,7 +9,7 @@ type User struct {
 // Create a new user, save user info into the database
 func (user *User) Create() (err error) {
 
-	db, err := getDbConnection()
+	db, err := GetDbConnection()
 
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (user *User) Create() (err error) {
 // Get a single user given the UUID
 func UserByID(id int) (user User, err error) {
 	user = User{}
-	db, err := getDbConnection()
+	db, err := GetDbConnection()
 
 	if err != nil {
 		return user, err

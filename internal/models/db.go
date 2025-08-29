@@ -13,12 +13,12 @@ import (
 var taxifyDb *sql.DB
 var taxifyMock sqlmock.Sqlmock
 
-func getDbConnection() (*sql.DB, error) {
-	db, _, err := getDbMockConnection()
+func GetDbConnection() (*sql.DB, error) {
+	db, _, err := GetDbMockConnection()
 	return db, err
 }
 
-func getDbMockConnection() (*sql.DB, sqlmock.Sqlmock, error) {
+func GetDbMockConnection() (*sql.DB, sqlmock.Sqlmock, error) {
 
 	// singleton
 	if taxifyDb != nil {

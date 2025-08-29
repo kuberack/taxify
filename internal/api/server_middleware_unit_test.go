@@ -8,17 +8,29 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/joho/godotenv"
+	"github.com/DATA-DOG/go-sqlmock"
+	"kuberack.com/taxify/internal/models"
 )
 
 func TestPostSignupPhoneUnit(t *testing.T) {
 
-	// Load variables from .env file into environment
-	// This should be moved to a setup function
-	err := godotenv.Load("../../.env")
+	// Get the mock client
+	_, mock, err := models.GetDbMockConnection()
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		t.Errorf("error in dbGet")
 	}
+
+	lastInsertId := 101
+	sentencePrepare := mock.ExpectPrepare("^insert into users (.+) values (.+)")
+	sentencePrepare.ExpectExec().
+		WithArgs("+919886240527", "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").
+		WillReturnResult(sqlmock.NewResult(int64(lastInsertId), 1))
+	columns := []string{"user_id", "phone_number", "verify_sid"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(lastInsertId, "+919886240527", "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	mock.ExpectQuery("^SELECT user_id, phone_number, verify_sid FROM users WHERE user_id = ?").
+		WithArgs(lastInsertId).
+		WillReturnRows(rows)
 
 	url := "/signup/phone"
 
