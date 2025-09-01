@@ -7,18 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/joho/godotenv"
 )
 
 func TestPostSignupPhoneIntegration(t *testing.T) {
-
-	// Load variables from .env file into environment
-	// This should be moved to a setup function
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
 
 	url := "/signup/phone"
 

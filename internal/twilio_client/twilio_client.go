@@ -55,40 +55,28 @@ func GetTwilioClient() (*TwilioClient, error) {
 		return twilio_client, nil
 	}
 
-	// Find your Account SID and Auth Token at twilio.com/console
-	// and set the environment variables. See http://twil.io/secure
-	accountSid, exists := os.LookupEnv("TAXIFY_TWILIO_ACCOUNT_SID")
-	if !exists {
-		return &TwilioClient{}, errors.New("twilio account sid not present")
-	}
-
-	authToken, exists := os.LookupEnv("TAXIFY_TWILIO_AUTH_KEY")
-	if !exists {
-		return &TwilioClient{}, errors.New("twilio auth key not present")
-	}
-
-	// https://console.twilio.com/us1/develop/verify/services
-	serviceId, exists := os.LookupEnv("TAXIFY_TWILIO_VERIFY_SERVICE_ID")
-	if !exists {
-		return &TwilioClient{}, errors.New("twilio verify service id not present")
-	}
-
 	// Check if the proxy ip is configured
 	// TODO: need to move tclient to the context. Basically each http client for a given
 	// external service needs to be available in the context
 	var tclient *twilio.RestClient
-	purl, exists := os.LookupEnv("HTTP_PROXY")
-	if !exists {
-		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
-			Username: accountSid,
-			Password: authToken,
-		})
-	} else {
+	var accountSid, authToken, serviceId string
+	deploy, exists := os.LookupEnv("TAXIFY_DEPLOY_TYPE")
+	if !exists || deploy == "UNIT_TEST" {
+		purl, exists := os.LookupEnv("HTTP_PROXY")
+
+		if !exists {
+			return &TwilioClient{}, errors.New("proxy not configured for unit test")
+		}
+
 		// https://github.com/twilio/twilio-go/blob/main/advanced-examples/custom-http-client.md
 
 		proxyURL, _ := url.Parse(purl)
 
 		// Create your custom Twilio client using the http client and your credentials
+		accountSid = "123"
+		authToken = "456"
+		serviceId = "VAabcd1234abcd1234abcd1234abcd1234" // servicesid must match pattern "^VA[0-9a-fA-F]{32}$"
+
 		twilioHttpClient := &MyClient{
 			Client: client.Client{
 				Credentials: client.NewCredentials(accountSid, authToken),
@@ -97,7 +85,34 @@ func GetTwilioClient() (*TwilioClient, error) {
 		}
 		twilioHttpClient.SetAccountSid(accountSid)
 		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{Client: twilioHttpClient})
+
+	} else if deploy == "INTEGRATION_TEST" {
+		// Find your Account SID and Auth Token at twilio.com/console
+		// and set the environment variables. See http://twil.io/secure
+		accountSid, exists = os.LookupEnv("TAXIFY_TWILIO_ACCOUNT_SID")
+		if !exists {
+			return &TwilioClient{}, errors.New("twilio account sid not present")
+		}
+
+		authToken, exists = os.LookupEnv("TAXIFY_TWILIO_AUTH_KEY")
+		if !exists {
+			return &TwilioClient{}, errors.New("twilio auth key not present")
+		}
+
+		// https://console.twilio.com/us1/develop/verify/services
+		serviceId, exists = os.LookupEnv("TAXIFY_TWILIO_VERIFY_SERVICE_ID")
+		if !exists {
+			return &TwilioClient{}, errors.New("twilio verify service id not present")
+		}
+
+		tclient = twilio.NewRestClientWithParams(twilio.ClientParams{
+			Username: accountSid,
+			Password: authToken,
+		})
+	} else {
+		return &TwilioClient{}, errors.New("unknown deployment type")
 	}
+
 	twilio_client = &TwilioClient{tclient, accountSid, serviceId}
 	return twilio_client, nil
 }
