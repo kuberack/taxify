@@ -10,4 +10,8 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: '1.24.4'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22.19.0
+    - run: npm install -g @stoplight/prism-cli
     - run: make unit_test
