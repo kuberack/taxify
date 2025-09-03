@@ -17,16 +17,6 @@ api: | bin
 bin:
 	mkdir -p bin
 
-integration_test:
-	# setup the db; it is assumed mysql is installed on the machine and
-	# has required username, password
-	@echo "Running bash commands"
-	for file in internal/models/*.sql; do \
-	mysql -u shiv -p'shiv123' < $$file; \
-	done
-	# Load env, and run the integration test
-	. $(PWD)/.env_integration_test; go test -run Integration ./internal/api/
-
 unit_test:
 	# it is assumed that prism is already installed
 	# npm install -g @stoplight/prism-cli
@@ -37,6 +27,23 @@ unit_test:
 
 	# load env variables, and run the unit test (Test functions with Unit in the name)
 	. $(PWD)/.env_unit_test; go test -run Unit ./internal/api/ 2>&1
+
+integration_test_baremetal:
+	# setup the db; it is assumed mysql is installed on the machine and
+	# has required username, password
+	@echo "Running bash commands"
+	for file in internal/models/*.sql; do \
+	mysql -u shiv -p'shiv123' --port=3306 < $$file; \
+	done
+	# Load env, and run the integration test
+	. $(PWD)/.env_integration_test_baremetal; \
+	. $(PWD)/.env_secrets; \
+	 go test -v -run Integration ./internal/api/
+
+integration_test_docker:
+	# Load env, and run the integration test
+	docker compose --env-file ../../.env_integration_test_docker --env-file ../../.env_secrets up
+
 
 clean:
 	rm -rf bin/*

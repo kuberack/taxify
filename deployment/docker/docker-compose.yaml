@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  api:
+    build: ../..
+    environment:
+      TAXIFY_TWILIO_ACCOUNT_SID: ${TAXIFY_TWILIO_ACCOUNT_SID}
+      TAXIFY_TWILIO_AUTH_KEY: ${TAXIFY_TWILIO_AUTH_KEY}
+      TAXIFY_TWILIO_VERIFY_SERVICE_ID: ${TAXIFY_TWILIO_VERIFY_SERVICE_ID}
+      TAXIFY_DEPLOY_TYPE: ${TAXIFY_DEPLOY_TYPE}
+      TAXIFY_TWILIO_COUNTRY_CODE: ${TAXIFY_TWILIO_COUNTRY_CODE}
+      TAXIFY_DB_USERNAME: ${TAXIFY_DB_USERNAME}
+      TAXIFY_DB_PASSWORD: ${TAXIFY_DB_PASSWORD}
+      TAXIFY_DB_NAME: ${TAXIFY_DB_NAME}
+      TAXIFY_DB_IP_ADDRESS: "db"
+      TAXIFY_DB_IP_PORT: ${TAXIFY_DB_IP_PORT}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${TAXIFY_DB_NAME}
+      MYSQL_USER: ${TAXIFY_DB_USERNAME}
+      MYSQL_PASSWORD: ${TAXIFY_DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

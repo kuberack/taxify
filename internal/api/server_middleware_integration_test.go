@@ -40,7 +40,11 @@ func TestPostSignupPhoneIntegration(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// create the handler.
-	h := NewServerWithMiddleware()
+	h, err := NewServerWithMiddleware()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	// invoke
 	h.ServeHTTP(rr, req)
