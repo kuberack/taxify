@@ -20,29 +20,17 @@ bin:
 unit_test:
 	# it is assumed that prism is already installed
 	# npm install -g @stoplight/prism-cli
-	# run the prism mock of the twilio verify API
-	prism mock https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_verify_v2.json &
-	# wait for the mock server to be up
-	while ! lsof -i :4010 -sTCP:LISTEN >/dev/null 2>&1; do sleep 1; done; echo "Port 4010 is now listening"
-
-	# load env variables, and run the unit test (Test functions with Unit in the name)
-	. $(PWD)/.env_unit_test; go test -run Unit ./internal/api/ 2>&1
+	./test_unit.sh
 
 integration_test_baremetal:
 	# setup the db; it is assumed mysql is installed on the machine and
 	# has required username, password
-	@echo "Running bash commands"
-	for file in internal/models/*.sql; do \
-	mysql -u shiv -p'shiv123' --port=3306 < $$file; \
-	done
-	# Load env, and run the integration test
-	. $(PWD)/.env_integration_test_baremetal; \
-	. $(PWD)/.env_secrets; \
-	 go test -v -run Integration ./internal/api/
+	./test_integration_baremetal.sh
 
 integration_test_docker:
 	# Load env, and run the integration test
-	docker compose --env-file ../../.env_integration_test_docker --env-file ../../.env_secrets up
+	rm -rf deployment/docker/mysql_data; docker compose --env-file .env_integration_test_docker \
+	--env-file .env_secrets -f deployment/docker/docker-compose.yaml up --force-recreate
 
 
 clean:

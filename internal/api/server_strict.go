@@ -26,6 +26,10 @@ func NewServerStrict(twilio_client *twilio_client.TwilioClient) TaxifyServer {
 	return TaxifyServer{twilio_client}
 }
 
+func (TaxifyServer) GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (TaxifyServer) GetDriversUserIdVehicles(ctx context.Context, request GetDriversUserIdVehiclesRequestObject) (GetDriversUserIdVehiclesResponseObject, error) {
 	return nil, errors.New("not implemented")
 

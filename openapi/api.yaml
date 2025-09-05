@@ -11,6 +11,15 @@ servers:
     description: Internal staging server for testing
 
 paths:
+  /healthz:
+    get:
+      summary: Returns the health of the application
+      description: Optional extended description in CommonMark or HTML.
+      responses:
+        "200":
+          description: Ready
+        "5XX":
+          description: Not ready
   /signup/oauth:
     post:
       summary: Signup using OAuth

@@ -1,0 +1,6 @@
+- This folders has sql files which should be run as part of docker compose db init
+- This folder contains copies of some files in the models folder
+- The reason being that we need to run only a subset of files in the models folder
+- Instead of a copy, another option would have been to create symlinks
+  to the files in the models directory. But that does not work in docker 
+  compose

@@ -25,6 +25,7 @@ func GetDbMockConnection() (*sql.DB, sqlmock.Sqlmock, error) {
 		return taxifyDb, taxifyMock, nil
 	}
 	env, exists := os.LookupEnv("TAXIFY_DEPLOY_TYPE")
+	fmt.Println("getDb:", env)
 	if exists && env == "UNIT_TEST" {
 		// sql mock
 		db, mock, err := sqlmock.New()

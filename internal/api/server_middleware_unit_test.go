@@ -12,6 +12,41 @@ import (
 	"kuberack.com/taxify/internal/models"
 )
 
+func TestHealthzUnit(t *testing.T) {
+
+	// Get the mock client
+	// This call needs to be done since the health
+	// check later will check if the db is created
+	_, _, err := models.GetDbMockConnection()
+	if err != nil {
+		t.Errorf("error in dbGet")
+	}
+
+	url := "/healthz"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// recorder
+	rr := httptest.NewRecorder()
+
+	// create the handler.
+	h, err := NewServerWithMiddleware()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	// invoke
+	h.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: want %v", http.StatusOK)
+	}
+}
+
 func TestPostSignupPhoneUnit(t *testing.T) {
 
 	// Get the mock client
