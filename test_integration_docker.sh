@@ -31,16 +31,22 @@ while true; do
   sleep 1
 done
 
+# sleep for some time the curl is failing. Need to remove once a better 
+# way to detect servce health is identified.
+echo "sleep for a minute"
+sleep 60
+
 # run the tests now
 echo "launching curl"
-curl -w "%{http_code}" -X POST --header "Content-Type: application/json" http://localhost:8080/signup/phone?type=driver --data '{"phone":9886240527}' -o /dev/null
+http_status=$(curl -w "%{http_code}" -f -s -X POST --header "Content-Type: application/json" http://localhost:8080/signup/phone?type=driver --data '{"phone":9886240527}' -o /dev/null)
 
 # Check status
 echo "checking response status"
-if [ "$http_code" != "200" ]; then
+if [ "$http_status" -ne "200" ]; then
   echo "Request failed with status code $http_code"
   exit 1
 fi
+echo "Test 1 success"
 
 # Bring down the containers
 # docker compose -f deployment/docker/docker-compose.yaml up -d

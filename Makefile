@@ -28,10 +28,7 @@ integration_test_baremetal:
 	./test_integration_baremetal.sh
 
 integration_test_docker:
-	# Load env, and run the integration test
-	rm -rf deployment/docker/mysql_data; docker compose --env-file .env_integration_test_docker \
-	--env-file .env_secrets -f deployment/docker/docker-compose.yaml up --force-recreate
-
+	./test_integration_docker.sh
 
 clean:
 	rm -rf bin/*
