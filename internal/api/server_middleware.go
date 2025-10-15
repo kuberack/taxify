@@ -2,20 +2,36 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
+	"os"
+	"runtime"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	middleware "github.com/oapi-codegen/nethttp-middleware"
 	"kuberack.com/taxify/internal/twilio_client"
 )
 
-func NewServerWithMiddleware() http.Handler {
+var rootDir string
+
+func init() {
+	var err error
+	if rootDir, err = os.Getwd(); err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+func NewServerWithMiddleware() (http.Handler, error) {
 
 	// Get a twilio client
 	t, err := twilio_client.GetTwilioClient()
 	if err != nil {
-		return nil
+		fmt.Printf("error: %s\n", err.Error())
+		return nil, errors.New("error: unable to get a Twilio Client")
 	}
 	// Inject twilio client into Server
 	server := NewServer(t)
@@ -29,10 +45,25 @@ func NewServerWithMiddleware() http.Handler {
 	// loader := &openapi3.Loader{Context: ctx, IsExternalRefsAllowed: true}
 	loader := openapi3.NewLoader()
 	// TODO: get the path from configuration
-	spec, err := loader.LoadFromFile("../../openapi/api.yaml")
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		fmt.Println("error: runtime.Caller")
+		return nil, errors.New("error: runtime Caller")
+	}
+	fmt.Println("Caller:", filename)
+	var spec *openapi3.T
+	if strings.HasPrefix(filename, "/app/") {
+		// Docker environment
+		fmt.Println("Environment: docker")
+		spec, err = loader.LoadFromFile("openapi/api.yaml")
+	} else {
+		// baremetal environment
+		fmt.Println("Environment: baremetal")
+		spec, err = loader.LoadFromFile("../../openapi/api.yaml")
+	}
 	if err != nil {
 		slog.Error("error", "msg", err.Error())
-		return nil
+		return nil, err
 	}
 	// Validate document
 	_ = spec.Validate(ctx)
@@ -65,5 +96,5 @@ func NewServerWithMiddleware() http.Handler {
 			Middlewares: []MiddlewareFunc{valmw, logmw},
 		})
 
-	return h
+	return h, nil
 }

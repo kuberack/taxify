@@ -25,6 +25,15 @@ func NewServer(twilio_client *twilio_client.TwilioClient) Server {
 	return Server{twilio_client}
 }
 
+func (Server) GetHealthz(w http.ResponseWriter, r *http.Request) {
+
+	if db, _ := models.GetDbConnection(); db != nil {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func (Server) GetDriversUserIdVehicles(w http.ResponseWriter, r *http.Request, userId int) {
 
 }

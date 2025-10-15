@@ -10,7 +10,11 @@ import (
 
 func main() {
 
-	h := api.NewServerWithMiddleware()
+	h, err := api.NewServerWithMiddleware()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	s := &http.Server{
 		Handler: h,
