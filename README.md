@@ -5,7 +5,8 @@
  - MySQL / vitess
 
 # Features
- - [openapi](docs/openapi.md)
+ - [OpenApi](docs/openapi.md)
+ - [Identity](docs/identity.md)
  - [Logging](docs/logging.md)
  - [Unit Testing](docs/unit_testing.md)
  - [Integration Testing](docs/integration_testing.md)
