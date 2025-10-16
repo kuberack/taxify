@@ -5,9 +5,11 @@
  - MySQL / vitess
 
 # Features
+ - [openapi](docs/openapi.md)
  - [Logging](docs/logging.md)
  - [Unit Testing](docs/unit_testing.md)
  - [Integration Testing](docs/integration_testing.md)
  - [CI](docs/ci.md)
+ - Configuration, secrets - TODO
  - [taxify features](docs/taxify_features.md)
 
