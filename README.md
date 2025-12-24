@@ -13,7 +13,7 @@
    - [Integration Testing](docs/integration_testing.md)
    - [CI](docs/ci.md)
    - Configuration, secrets - TODO
-   - Multi-tenant
+   - Multi-tenant - TODO
  - External Services
    - [Twilio](docs/external_service_twilio.md)
  - [Taxify features](docs/taxify_features.md)

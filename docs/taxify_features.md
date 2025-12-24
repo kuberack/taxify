@@ -1,9 +1,6 @@
 
 # taxify features (TODO)
 
-## Multi-tenant
- - Platform can be used by different service providers.
-
 ## Instant Cab Booking
  - Users can book a taxi instantly by entering pickup and drop-off locations.
 
