@@ -9,10 +9,10 @@
  - The taxify service, and the database are run on the baremetal
  - For other external service, the actual service is used.
  - Start the mysql service in the VM
- - Running the test
+ - To run the test
 
 ```
-$ ./test_integration_baremetal.sh
+kuberack/taxify$ ./test_integration_baremetal.sh
 setting environment variables
 setting sql db
 mysql: [Warning] Using a password on the command line interface can be insecure.
@@ -21,14 +21,16 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 mysql: [Warning] Using a password on the command line interface can be insecure.
 running go test
 === RUN   TestPostSignupPhoneIntegration
-Caller: /home/hima/repos/kuberack/taxify/internal/api/server_middleware.go
+Caller: /home/xxxx/repos/kuberack/taxify/internal/api/server_middleware.go
 Environment: baremetal
-2025/12/23 20:36:12 INFO request received user.ip="" request.method=POST request.url="/signup/phone?type=driver" request.proto=HTTP/1.1
+2025/12/24 14:54:33 INFO request received user.ip="" request.method=POST request.url="/signup/phone?type=driver" request.proto=HTTP/1.1
 getDb: INTEGRATION_TEST_BAREMETAL
---- PASS: TestPostSignupPhoneIntegration (6.55s)
+--- PASS: TestPostSignupPhoneIntegration (1.87s)
 PASS
-ok  	kuberack.com/taxify/internal/api	6.576s
+ok  	kuberack.com/taxify/internal/api	1.900s
 ```
+ - Running the test should result in user receiving an SMS
+![alt text](https://github.com/kuberack/taxify/raw/master/docs/images/taxify-baremetal-test.png "sms received")
 
 # Docker
  - In a docker integration scenario, docker compose is used
@@ -36,6 +38,7 @@ ok  	kuberack.com/taxify/internal/api	6.576s
  - For external services such as twilio, the actual service is used
  - For database, a mysql docker container is used
  - Stop any mysql service running in the VM host since mysql in docker will attempt to open the same port.
+ - Run the docker integration test
 
 ```
 kuberack/taxify$ ./test_integration_docker.sh
@@ -69,3 +72,5 @@ launching curl
 checking response status
 Test 1 success
 ```
+ - Just as in the baremetal case, running the test should result in user receiving an SMS containing the OTP.
+

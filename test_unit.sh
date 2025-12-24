@@ -4,6 +4,7 @@
 echo "setting environment variables"
 set -a
 source .env_unit_test
+source .env_secrets
 set +a
 
 # Launch prism mock and wait for it to finish

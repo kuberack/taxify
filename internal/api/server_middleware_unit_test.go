@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strconv"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -55,14 +57,24 @@ func TestPostSignupPhoneUnit(t *testing.T) {
 		t.Errorf("error in dbGet")
 	}
 
+	// get the phone number for which we want to test
+	phoneNum, ok := os.LookupEnv("TAXIFY_APP_PHONE_NUMBER")
+	if !ok {
+		t.Errorf("error in phone Number env var")
+	}
+	countryCode, ok := os.LookupEnv("TAXIFY_APP_COUNTRY_CODE_NUMBER")
+	if !ok {
+		t.Errorf("error in country code env var")
+	}
+
 	lastInsertId := 101
 	sentencePrepare := mock.ExpectPrepare("^insert into users (.+) values (.+)")
 	sentencePrepare.ExpectExec().
-		WithArgs("+919886240527", "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").
+		WithArgs(countryCode+phoneNum, "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").
 		WillReturnResult(sqlmock.NewResult(int64(lastInsertId), 1))
 	columns := []string{"user_id", "phone_number", "verify_sid"}
 	rows := sqlmock.NewRows(columns).
-		AddRow(lastInsertId, "+919886240527", "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		AddRow(lastInsertId, countryCode+phoneNum, "VEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	mock.ExpectQuery("^SELECT user_id, phone_number, verify_sid FROM users WHERE user_id = ?").
 		WithArgs(lastInsertId).
 		WillReturnRows(rows)
@@ -70,7 +82,10 @@ func TestPostSignupPhoneUnit(t *testing.T) {
 	url := "/signup/phone"
 
 	// add request body
-	number := 9886240527
+	number, err := strconv.Atoi(phoneNum)
+	if err != nil {
+		t.Errorf("error in converting str to number")
+	}
 	data := PostSignupPhoneJSONBody{Phone: &number}
 
 	// Marshal the struct to JSON
