@@ -38,7 +38,7 @@ sleep 60
 
 # run the tests now
 echo "launching curl"
-http_status=$(curl -w "%{http_code}" -f -s -X POST --header "Content-Type: application/json" http://localhost:8080/signup/phone?type=driver --data '{"phone":9886240527}' -o /dev/null)
+http_status=$(curl -w "%{http_code}" -f -s -X POST --header "Content-Type: application/json" http://localhost:8080/signup/phone?type=driver --data '{"phone":'"$TAXIFY_APP_PHONE_NUMBER"'}' -o /dev/null)
 
 # Check status
 echo "checking response status"
