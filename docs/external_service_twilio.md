@@ -2,13 +2,9 @@
 
 # Twilio Service
 
-Ref: 
-  - [iam api](https://www.twilio.com/docs/iam/api)
-  - [verification api](https://github.com/twilio/twilio-go?tab=readme-ov-file#test-your-installation)
-
-
-  - Base url
-    - https://api.twilio.com/2010-04-01
+  - Ref: 
+    - [iam api](https://www.twilio.com/docs/iam/api)
+    - [verification api](https://github.com/twilio/twilio-go?tab=readme-ov-file#test-your-installation)
 
   - Authentication
     - Twilio supports HTTP Basic authentication
