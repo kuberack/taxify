@@ -30,7 +30,7 @@ PASS
 ok  	kuberack.com/taxify/internal/api	1.900s
 ```
  - Running the test should result in user receiving an SMS
-<img src="https://github.com/kuberack/taxify/blob/main/docs/images/taxify-baremetal-test.png" width="5%" style="height:auto;" alt="sms received">
+<img src="https://github.com/kuberack/taxify/blob/main/docs/images/taxify-baremetal-test.png" width="20%" style="height:auto;" alt="sms received">
 
 # Docker
  - In a docker integration scenario, docker compose is used
