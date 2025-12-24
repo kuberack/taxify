@@ -1,5 +1,5 @@
 
-# taxify features to be implemented
+# taxify features (TODO)
 
 ## Multi-tenant
  - Platform can be used by different service providers.
