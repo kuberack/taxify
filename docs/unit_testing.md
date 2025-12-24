@@ -2,7 +2,7 @@
 # Unit Testing approach
 
  - Use mocks for the external services
- - For services such as twilio, the service's openapi specfication ([link](https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_verify_v2.json))is used to run mocks http servers using prism.
+ - For services such as twilio, the service's openapi specfication ([link](https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_verify_v2.json)) is used to run mocks http servers using prism ([link](https://www.twilio.com/docs/openapi/mock-api-generation-with-twilio-openapi-spec)).
  - For database, [sqlmock](https://github.com/DATA-DOG/go-sqlmock) is used.
  - Running the unit test
 
